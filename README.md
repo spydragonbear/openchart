@@ -163,7 +163,7 @@ print(nse.timeframes())
 
 ## Notes
 
-- Ensure that you have a stable internet connection as the library fetches data from NSE servers.
+- Ensure that you have a stable internet connection.
 - The `historical` method uses `symbolsearch`, which returns the first matching symbol. If multiple symbols match your query, consider using an exact symbol name or modifying the `historical` method to accept a symbol code directly.
 - **When fetching historical data, always specify `start` and `end` dates. You can use `datetime` and `timedelta` to calculate these dates.**
 
