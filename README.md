@@ -14,6 +14,12 @@ OpenChart is a Python library for downloading intraday and EOD (End of Day) hist
 You can install the library directly from the GitHub repository:
 
 ```bash
+pip install openchart
+```
+
+or from the GitHub repository:
+
+```bash
 pip install git+https://github.com/marketcalls/openchart.git
 ```
 
