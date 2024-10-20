@@ -177,4 +177,4 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ## Contact
 
-For any questions or support, please open an issue on the GitHub repository or contact [rajandran@marketcalls.in](mailto:rajandran@marketcalls.in).
+For any questions or support, please open an issue on the GitHub repository 
