@@ -66,7 +66,7 @@ print(data)
 
 #### EOD Data
 
-Fetch end-of-day data for **Nifty 50**, from 30 days ago until today:
+Fetch end-of-day data for **Nifty 50**, from 365 days ago until today:
 
 ```python
 import datetime
@@ -86,7 +86,7 @@ print(data)
 
 #### NFO Data
 
-Fetch historical data for a futures contract, from 30 days ago until today:
+Fetch historical data for a futures contract of 15min data, from 30 days ago until today:
 
 ```python
 import datetime
