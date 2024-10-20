@@ -1,3 +1,16 @@
+# Download market data from NSEIndia's API
+
+<table border=1 cellpadding=10><tr><td>
+
+#### \*\*\* IMPORTANT LEGAL DISCLAIMER \*\*\*
+
+---
+
+openchart is **not** affiliated, endorsed, or vetted by NSEIndia. It's
+an open-source tool that uses NseIndia's publicly available APIs, and is
+intended for research and educational purposes.
+
+
 # OpenChart
 
 OpenChart is a Python library for downloading intraday and EOD (End of Day) historical data from the NSE (National Stock Exchange of India) and NFO (NSE Futures and Options) exchanges.
