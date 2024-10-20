@@ -39,37 +39,6 @@ Before fetching historical data or searching for symbols, download the master da
 nse.download()
 ```
 
-### Search for Symbols
-
-#### NSE Exchange
-
-Search for symbols like **Nifty 50**, **TCS**, **RELIANCE** in the NSE exchange.
-
-```python
-symbols = nse.search('RELIANCE', exchange='NSE')
-print(symbols)
-```
-
-#### NFO Exchange
-
-Search for symbols like **NIFTY24OCTFUT**, **BANKNIFTY24OCTFUT**, **NIFTY24N2124800CE**, **NIFTY24N2124800PE** in the NFO exchange.
-
-- **NIFTY24N2124800CE** corresponds to **NIFTY 21 Nov 2024 CE 24800.00**.
-- **NIFTY24N2124800PE** corresponds to **NIFTY 21 Nov 2024 PE 24800.00**.
-
-```python
-symbols = nse.search('BANKNIFTY24OCT', exchange='NFO')
-print(symbols)
-```
-
-#### Exact Match Search
-
-If you want to perform an exact match search, you can set `exact_match=True`.
-
-```python
-symbol_info = nse.search('BANKNIFTY24OCTFUT', exchange='NFO', exact_match=True)
-print(symbol_info)
-```
 
 ### Fetch Historical Data
 
@@ -103,7 +72,7 @@ Fetch end-of-day data for **Nifty 50**, from 30 days ago until today:
 import datetime
 
 end_date = datetime.datetime.now()
-start_date = end_date - datetime.timedelta(days=30)
+start_date = end_date - datetime.timedelta(days=365)
 
 data = nse.historical(
     symbol='Nifty 50',
@@ -130,9 +99,41 @@ data = nse.historical(
     exchange='NFO',
     start=start_date,
     end=end_date,
-    interval='1d'
+    interval='15m'
 )
 print(data)
+```
+
+### Search for Symbols
+
+#### NSE Exchange
+
+Search for symbols like **Nifty 50**, **TCS**, **RELIANCE** in the NSE exchange.
+
+```python
+symbols = nse.search('RELIANCE', exchange='NSE')
+print(symbols)
+```
+
+#### NFO Exchange
+
+Search for symbols like **NIFTY24OCTFUT**, **BANKNIFTY24OCTFUT**, **NIFTY24N2124800CE**, **NIFTY24N2124800PE** in the NFO exchange.
+
+- **NIFTY24N2124800CE** corresponds to **NIFTY 21 Nov 2024 CE 24800.00**.
+- **NIFTY24N2124800PE** corresponds to **NIFTY 21 Nov 2024 PE 24800.00**.
+
+```python
+symbols = nse.search('BANKNIFTY24OCT', exchange='NFO')
+print(symbols)
+```
+
+#### Exact Match Search
+
+If you want to perform an exact match search, you can set `exact_match=True`.
+
+```python
+symbol_info = nse.search('BANKNIFTY24OCTFUT', exchange='NFO', exact_match=True)
+print(symbol_info)
 ```
 
 ### Supported Timeframes
