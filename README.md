@@ -142,8 +142,27 @@ Search for symbols like **NIFTY24OCTFUT**, **BANKNIFTY24OCTFUT**, **NIFTY24N2124
 - **NIFTY24N2124800PE** corresponds to **NIFTY 21 Nov 2024 PE 24800.00**.
 
 ```python
-symbols = nse.search('BANKNIFTY24OCT', exchange='NFO')
+symbols = nse.search('24OCTFUT', exchange='NFO')
 print(symbols)
+```
+
+Output
+```bash
+    ScripCode              Symbol                    Name Type
+0       35006   BANKNIFTY24OCTFUT   BANKNIFTY 30 Oct 2024    1
+1       35007  NIFTYNXT5024OCTFUT  NIFTYNXT50 25 Oct 2024    1
+2       35012    FINNIFTY24OCTFUT    FINNIFTY 29 Oct 2024    1
+3       35239  MIDCPNIFTY24OCTFUT  MIDCPNIFTY 28 Oct 2024    1
+4       35382       NIFTY24OCTFUT       NIFTY 31 Oct 2024    1
+..        ...                 ...                     ...  ...
+179     48598         UPL24OCTFUT         UPL 31 Oct 2024    3
+180     48601        VEDL24OCTFUT        VEDL 31 Oct 2024    3
+181     48602      VOLTAS24OCTFUT      VOLTAS 31 Oct 2024    3
+182     48603       WIPRO24OCTFUT       WIPRO 31 Oct 2024    3
+183     48604   ZYDUSLIFE24OCTFUT   ZYDUSLIFE 31 Oct 2024    3
+
+[184 rows x 4 columns]
+
 ```
 
 #### Exact Match Search
