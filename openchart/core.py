@@ -7,7 +7,7 @@ from .utils import process_historical_data
 import aiohttp
 import asyncio
 from typing import List, Dict, Union
-
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 class NSEData:
     def __init__(self):
@@ -145,109 +145,75 @@ class NSEData:
         return ['1m', '3m', '5m', '10m', '15m', '30m', '1h', '1d', '1w', '1M']
         #############################################################################################################
 
-    async def async_historical(self, symbols: List[str], exchange: str = "NSE", 
-                             start=None, end=None, interval: str = '1d') -> Dict[str, pd.DataFrame]:
-        """
-        Asynchronously fetch historical data for multiple symbols simultaneously.
+    async def async_historical(
+        self,
+        symbols: List[str],
+        exchange: str = "NSE",
+        start=None,
+        end=None,
+        interval: str = "1d",
+        max_concurrent: int = 10,
+        retries: int = 3,
+    ) -> Dict[str, pd.DataFrame]:
+        semaphore = asyncio.Semaphore(max_concurrent)
         
-        Args:
-            symbols (List[str]): List of symbols to fetch data for
-            exchange (str): Exchange to fetch data from ('NSE' or 'NFO')
-            start: Start date (datetime object or None)
-            end: End date (datetime object or None)
-            interval (str): Time interval for data
-            
-        Returns:
-            Dict[str, pd.DataFrame]: Dictionary with symbols as keys and DataFrames as values
-        """
-        # First get all symbol info synchronously
+        @retry(
+            stop=stop_after_attempt(retries),
+            wait=wait_exponential(multiplier=1, min=2, max=10),
+        )
+        async def fetch_with_retry(session, symbol, payload):
+            async with semaphore:
+                return await self._fetch_single_historical(session, symbol, payload, interval)
+
+        # Prepare payloads for all symbols
         symbol_infos = {}
         for symbol in symbols:
             info = self.symbolsearch(symbol, exchange)
-            if info is not None:
+            if info:
                 symbol_infos[symbol] = info
-        
+
         if not symbol_infos:
             return {}
-        
-        # Prepare the payloads
+
         interval_map = {
-            '1m': ('1', 'I'), '3m': ('3', 'I'), '5m': ('5', 'I'), '10m': ('10', 'I'),
-            '15m': ('15', 'I'), '30m': ('30', 'I'), '1h': ('60', 'I'),
-            '1d': ('1', 'D'), '1w': ('1', 'W'), '1M': ('1', 'M')
+            "1m": ("1", "I"), "3m": ("3", "I"), "5m": ("5", "I"), "10m": ("10", "I"),
+            "15m": ("15", "I"), "30m": ("30", "I"), "1h": ("60", "I"),
+            "1d": ("1", "D"), "1w": ("1", "W"), "1M": ("1", "M"),
         }
-        time_interval, chart_period = interval_map.get(interval, ('1', 'D'))
-        
-        # Create connector with higher limit and enable Brotli
-        conn = aiohttp.TCPConnector(limit=10, force_close=True)
-        
+        time_interval, chart_period = interval_map.get(interval, ("1", "D"))
+
+        conn = aiohttp.TCPConnector(limit=max_concurrent, force_close=False)
+        timeout = aiohttp.ClientTimeout(total=30)
+
         async with aiohttp.ClientSession(
-            headers=self.session.headers,
-            connector=conn,
-            timeout=aiohttp.ClientTimeout(total=30)
+            connector=conn, timeout=timeout
         ) as session:
             tasks = []
             for symbol, info in symbol_infos.items():
                 payload = {
                     "exch": "N" if exchange.upper() == "NSE" else "D",
                     "instrType": "C" if exchange.upper() == "NSE" else "D",
-                    "scripCode": int(info['ScripCode']),
-                    "ulToken": int(info['ScripCode']),
+                    "scripCode": int(info["ScripCode"]),
+                    "ulToken": int(info["ScripCode"]),
                     "fromDate": int(start.timestamp()) if start else 0,
                     "toDate": int(end.timestamp()) if end else int(time.time()),
                     "timeInterval": time_interval,
                     "chartPeriod": chart_period,
-                    "chartStart": 0
+                    "chartStart": 0,
                 }
-                tasks.append(self._fetch_single_historical(session, symbol, payload, interval))
-            
+                tasks.append(fetch_with_retry(session, symbol, payload))
+
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
         # Process results
         output = {}
         for symbol, result in zip(symbol_infos.keys(), results):
             if isinstance(result, Exception):
-                print(f"Error fetching data for {symbol}: {str(result)}")
+                print(f"Failed after retries for {symbol}: {result}")
                 output[symbol] = pd.DataFrame()
             elif isinstance(result, pd.DataFrame):
                 output[symbol] = result
             else:
-                print(f"Unexpected result type for {symbol}")
                 output[symbol] = pd.DataFrame()
-        
+
         return output
-    
-    async def _fetch_single_historical(self, session: aiohttp.ClientSession, symbol: str, 
-                                     payload: Dict, interval: str) -> pd.DataFrame:
-        """
-        Helper method to fetch historical data for a single symbol.
-        """
-        try:
-            # First ensure we have the necessary cookies
-            async with session.get("https://www.nseindia.com", timeout=5) as cookie_resp:
-                await cookie_resp.read()  # Important to read the response to get cookies
-            
-            async with session.post(
-                self.historical_url,
-                json=payload,
-                timeout=10
-            ) as response:
-                response.raise_for_status()
-                data = await response.json()
-                
-                if not data:
-                    print(f"No data received for {symbol}")
-                    return pd.DataFrame()
-                
-                return process_historical_data(data, interval)
-                
-        except aiohttp.ClientError as e:
-            print(f"HTTP error for {symbol}: {str(e)}")
-            return pd.DataFrame()
-        except Exception as e:
-            print(f"Error processing {symbol}: {str(e)}")
-            return pd.DataFrame()
-                
-        except Exception as e:
-            print(f"Error in _fetch_single_historical for {symbol}: {str(e)}")
-            raise e
