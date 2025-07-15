@@ -154,7 +154,7 @@ class NSEData:
         interval: str = "1d",
         max_concurrent: int = 10,
         retries: int = 3,
-        ) -> Dict[str, pd.DataFrame]:
+    ) -> Dict[str, pd.DataFrame]:
         semaphore = asyncio.Semaphore(max_concurrent)
         
         @retry(
@@ -164,46 +164,46 @@ class NSEData:
         async def fetch_with_retry(session, symbol, payload):
             async with semaphore:
                 return await self._fetch_single_historical(session, symbol, payload, interval)
-    
+
         # Prepare payloads for all symbols
         symbol_infos = {}
         for symbol in symbols:
             info = self.symbolsearch(symbol, exchange)
-            if info is not None and not info.empty:  # Fix: Check for None and empty Series
+            if info:
                 symbol_infos[symbol] = info
-    
+
         if not symbol_infos:
             return {}
-    
+
         interval_map = {
             "1m": ("1", "I"), "3m": ("3", "I"), "5m": ("5", "I"), "10m": ("10", "I"),
             "15m": ("15", "I"), "30m": ("30", "I"), "1h": ("60", "I"),
             "1d": ("1", "D"), "1w": ("1", "W"), "1M": ("1", "M"),
         }
         time_interval, chart_period = interval_map.get(interval, ("1", "D"))
-    
+
         conn = aiohttp.TCPConnector(limit=max_concurrent, force_close=False)
         timeout = aiohttp.ClientTimeout(total=30)
 
         async with aiohttp.ClientSession(
-        connector=conn, timeout=timeout
+            connector=conn, timeout=timeout
         ) as session:
-        tasks = []
-        for symbol, info in symbol_infos.items():
-            payload = {
-                "exch": "N" if exchange.upper() == "NSE" else "D",
-                "instrType": "C" if exchange.upper() == "NSE" else "D",
-                "scripCode": int(info["ScripCode"]),
-                "ulToken": int(info["ScripCode"]),
-                "fromDate": int(start.timestamp()) if start else 0,
-                "toDate": int(end.timestamp()) if end else int(time.time()),
-                "timeInterval": time_interval,
-                "chartPeriod": chart_period,
-                "chartStart": 0,
-            }
-            tasks.append(fetch_with_retry(session, symbol, payload))
+            tasks = []
+            for symbol, info in symbol_infos.items():
+                payload = {
+                    "exch": "N" if exchange.upper() == "NSE" else "D",
+                    "instrType": "C" if exchange.upper() == "NSE" else "D",
+                    "scripCode": int(info["ScripCode"]),
+                    "ulToken": int(info["ScripCode"]),
+                    "fromDate": int(start.timestamp()) if start else 0,
+                    "toDate": int(end.timestamp()) if end else int(time.time()),
+                    "timeInterval": time_interval,
+                    "chartPeriod": chart_period,
+                    "chartStart": 0,
+                }
+                tasks.append(fetch_with_retry(session, symbol, payload))
 
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+            results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Process results
         output = {}
@@ -215,5 +215,5 @@ class NSEData:
                 output[symbol] = result
             else:
                 output[symbol] = pd.DataFrame()
-        
+
         return output
