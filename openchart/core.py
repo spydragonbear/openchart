@@ -186,24 +186,24 @@ class NSEData:
         timeout = aiohttp.ClientTimeout(total=30)
 
         async with aiohttp.ClientSession(
-            connector=conn, timeout=timeout
-            ) as session:
-            tasks = []
-            for symbol, info in symbol_infos.items():
-                payload = {
-                    "exch": "N" if exchange.upper() == "NSE" else "D",
-                    "instrType": "C" if exchange.upper() == "NSE" else "D",
-                    "scripCode": int(info["ScripCode"]),
-                    "ulToken": int(info["ScripCode"]),
-                    "fromDate": int(start.timestamp()) if start else 0,
-                    "toDate": int(end.timestamp()) if end else int(time.time()),
-                    "timeInterval": time_interval,
-                    "chartPeriod": chart_period,
-                    "chartStart": 0,
-                }
-                tasks.append(fetch_with_retry(session, symbol, payload))
-    
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+        connector=conn, timeout=timeout
+        ) as session:
+        tasks = []
+        for symbol, info in symbol_infos.items():
+            payload = {
+                "exch": "N" if exchange.upper() == "NSE" else "D",
+                "instrType": "C" if exchange.upper() == "NSE" else "D",
+                "scripCode": int(info["ScripCode"]),
+                "ulToken": int(info["ScripCode"]),
+                "fromDate": int(start.timestamp()) if start else 0,
+                "toDate": int(end.timestamp()) if end else int(time.time()),
+                "timeInterval": time_interval,
+                "chartPeriod": chart_period,
+                "chartStart": 0,
+            }
+            tasks.append(fetch_with_retry(session, symbol, payload))
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Process results
         output = {}
