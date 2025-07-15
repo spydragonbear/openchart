@@ -143,9 +143,10 @@ class NSEData:
     def timeframes(self):
         """Return supported timeframes."""
         return ['1m', '3m', '5m', '10m', '15m', '30m', '1h', '1d', '1w', '1M']
+        #############################################################################################################
 
     async def async_historical(self, symbols: List[str], exchange: str = "NSE", 
-                              start=None, end=None, interval: str = '1d') -> Dict[str, pd.DataFrame]:
+                             start=None, end=None, interval: str = '1d') -> Dict[str, pd.DataFrame]:
         """
         Asynchronously fetch historical data for multiple symbols simultaneously.
         
@@ -177,8 +178,14 @@ class NSEData:
         }
         time_interval, chart_period = interval_map.get(interval, ('1', 'D'))
         
-        # Create tasks for each symbol
-        async with aiohttp.ClientSession(headers=self.session.headers) as session:
+        # Create connector with higher limit and enable Brotli
+        conn = aiohttp.TCPConnector(limit=10, force_close=True)
+        
+        async with aiohttp.ClientSession(
+            headers=self.session.headers,
+            connector=conn,
+            timeout=aiohttp.ClientTimeout(total=30)
+        ) as session:
             tasks = []
             for symbol, info in symbol_infos.items():
                 payload = {
@@ -202,8 +209,11 @@ class NSEData:
             if isinstance(result, Exception):
                 print(f"Error fetching data for {symbol}: {str(result)}")
                 output[symbol] = pd.DataFrame()
-            else:
+            elif isinstance(result, pd.DataFrame):
                 output[symbol] = result
+            else:
+                print(f"Unexpected result type for {symbol}")
+                output[symbol] = pd.DataFrame()
         
         return output
     
@@ -214,9 +224,14 @@ class NSEData:
         """
         try:
             # First ensure we have the necessary cookies
-            await session.get("https://www.nseindia.com", timeout=5)
+            async with session.get("https://www.nseindia.com", timeout=5) as cookie_resp:
+                await cookie_resp.read()  # Important to read the response to get cookies
             
-            async with session.post(self.historical_url, json=payload, timeout=10) as response:
+            async with session.post(
+                self.historical_url,
+                json=payload,
+                timeout=10
+            ) as response:
                 response.raise_for_status()
                 data = await response.json()
                 
@@ -225,6 +240,13 @@ class NSEData:
                     return pd.DataFrame()
                 
                 return process_historical_data(data, interval)
+                
+        except aiohttp.ClientError as e:
+            print(f"HTTP error for {symbol}: {str(e)}")
+            return pd.DataFrame()
+        except Exception as e:
+            print(f"Error processing {symbol}: {str(e)}")
+            return pd.DataFrame()
                 
         except Exception as e:
             print(f"Error in _fetch_single_historical for {symbol}: {str(e)}")
