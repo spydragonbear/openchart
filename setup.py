@@ -12,7 +12,7 @@ setup(
         'requests',
         'pandas',
         'brotli',
-        tenacity,
+        'tenacity',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
