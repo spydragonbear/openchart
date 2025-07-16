@@ -11,6 +11,8 @@ setup(
     install_requires=[
         'requests',
         'pandas',
+        'brotli',
+        tenacity,
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
